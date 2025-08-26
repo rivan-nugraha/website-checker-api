@@ -34,14 +34,11 @@ function requestHandler(req, res) {
         return;
       }
 
+      // pilih protocol http / https
       const client = targetUrl.startsWith("https") ? https : http;
-      let options = {};
-      if (targetUrl.startsWith("https") && fs.existsSync(caPath)) {
-        options.agent = new https.Agent({ ca: fs.readFileSync(caPath) });
-      }
 
       client
-        .get(targetUrl, options, (resp) => {
+        .get(targetUrl, (resp) => {
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ status: true, code: resp.statusCode }));
         })
