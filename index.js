@@ -40,7 +40,7 @@ function requestHandler(req, res) {
       client
         .get(targetUrl, (resp) => {
           res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ status: true, code: resp.statusCode }));
+          res.end(JSON.stringify({ status: resp.statusCode === 200, code: resp.statusCode }));
         })
         .on("error", (err) => {
           res.writeHead(200, { "Content-Type": "application/json" });
