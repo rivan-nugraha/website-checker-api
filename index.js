@@ -135,6 +135,7 @@ async function handleGetDataClient(req, res) {
       program_name: data.backend_folder_name,
       domain_name: data.domain_name,
       backend_url: data.backend_url,
+      port: data.port,
     }));
 
     const total = dataGsRevamp.length;
