@@ -102,7 +102,7 @@ async function handleGetDataClient(req, res) {
     }
 
     const dataGsMapped = json.data.map((row) => {
-      row.backend_url = row.backend_url + `:${row.port}` + "/api/v1/system/get";
+      row.backend_url = row.backend_url;
       row.is_terpusat = !row.is_terpusat.length ? "TIDAK TERPUSAT" : row.is_terpusat;
       row.apk_name = !row.apk_name.length ? "TIDAK ADA" : row.apk_name;
       row.status_backup = !row.status_backup.length ? "TIDAK ADA" : row.status_backup;
