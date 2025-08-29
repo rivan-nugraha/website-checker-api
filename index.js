@@ -95,6 +95,7 @@ async function handleGetDataClient(req, res) {
     const limit = query.searchParams.get("limit") || 10;
     const selectedServer = query.searchParams.get("selectedServer") || "ALL";
     const search = query.searchParams.get("search");
+
     const json = cacheData.data;
     if (!json) {
       throw new Error("No cached data available");
@@ -139,8 +140,8 @@ async function handleGetDataClient(req, res) {
     const total = dataGsRevamp.length;
 
     // pagination
-    const start = (page - 1) * limit;
-    const paginatedData = dataGsRevamp.slice(start, start + limit);
+    const start = (Number(page) - 1) * Number(limit);
+    const paginatedData = dataGsRevamp.slice(start, start + Number(limit));
     safeEnd(res, 200, {
       status: true,
       data: {
