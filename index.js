@@ -91,7 +91,13 @@ async function requestHandler(req, res) {
         })
 
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ status: true, data: dataGsRevamp }));
+        res.end(JSON.stringify({ status: true, data: {
+          page: data.page,
+          limit: data.limit,
+          total: data.total,
+          totalPages: data.totalPages,
+          items: dataGsRevamp
+        } }));
       } catch (error) {
         throw new Error(error);
       }
