@@ -56,7 +56,12 @@ async function requestHandler(req, res) {
 
     if (req.url.startsWith("/get-data-client")) {
       try {
-        const { data, err } = await axios.get(GOOGLE_URL).then((response) => {
+        const query = new URL(req.url, `http://${req.headers.host}`);
+
+        const page = query.searchParams.get("page") || 1;
+        const limit = query.searchParams.get("limit") || 10;
+
+        const { data, err } = await axios.get(`${GOOGLE_URL}?page=${page}&limit=${limit}`).then((response) => {
           return {
             data: response.data,
             err: null
@@ -68,7 +73,7 @@ async function requestHandler(req, res) {
         }
 
         // kalau mau mapping
-        const dataGsMapped = data.map((row) => {
+        const dataGsMapped = data.data.map((row) => {
           row.backend_url = row.backend_url + `:${row.port}` + "/api/v1/system/get";
           row.is_terpusat = !row.is_terpusat.length ? "TIDAK TERPUSAT" : row.is_terpusat;
           row.apk_name = !row.apk_name.length ? "TIDAK ADA" : row.apk_name;
