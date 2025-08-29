@@ -4,6 +4,8 @@ const https = require("https");
 const axios = require("axios");
 const { URL } = require("url");
 const dotenv = require('dotenv');
+const dns = require("dns");
+
 dotenv.config();
 
 const fs = require('fs');
@@ -13,6 +15,12 @@ const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbwYFqEheXULi9gB-ZThv
 const keyPath = path.join("/home/nodeapp/cert", 'private.key');
 const certPath = path.join("/home/nodeapp/cert", 'fullchain.pem');
 const caPath = path.join("/home/nodeapp/cert", 'ca_bundle.crt');
+
+function safeEnd(res, statusCode, payload) {
+  if (res.writableEnded) return; // pastikan belum dikirim
+  res.writeHead(statusCode, { "Content-Type": "application/json" });
+  res.end(JSON.stringify(payload));
+}
 
 async function requestHandler(req, res) {
   try {
@@ -32,25 +40,47 @@ async function requestHandler(req, res) {
         const targetUrl = query.searchParams.get("url");
 
         if (!targetUrl) {
-          res.writeHead(400, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "url parameter is required" }));
-          return;
-        }
+          safeEnd(res, 400, { error: "url parameter is required" });
+        } else {
+          const client = targetUrl.startsWith("https") ? https : http;
+          const request = client.get(
+            targetUrl,
+            { timeout: 10000 }, // atur timeout 10 detik
+            (resp) => {
+              let data = "";
+              resp.on("data", (chunk) => (data += chunk));
+              resp.on("end", () => {
+                let isCloudflare =
+                  data.includes("cloudflare") ||
+                  data.includes("Checking your browser") ||
+                  data.includes("Verifikasi bahwa Anda adalah manusia");
 
-        // pilih protocol http / https
-        const client = targetUrl.startsWith("https") ? https : http;
+                safeEnd(res, 200, {
+                  status: resp.statusCode === 200 && !isCloudflare,
+                  code: resp.statusCode,
+                  cloudflareBlocked: isCloudflare,
+                });
+              });
+            }
+          );
 
-        client
-          .get(targetUrl, (resp) => {
-            res.writeHead(200, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ status: resp.statusCode === 200, code: resp.statusCode }));
-          })
-          .on("error", (err) => {
-            res.writeHead(200, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ status: false, error: err.message }));
+          request.on("timeout", () => {
+            request.destroy(); // stop supaya nggak lanjut ke error
+            safeEnd(res, 200, {
+              status: false,
+              error: "Time Out",
+            });
           });
+
+          request.on("error", (err) => {
+            safeEnd(res, 200, {
+              status: false,
+              error: err.code || err.message,
+            });
+          });
+        }
       } catch (err) {
-        throw new Error(err);
+        safeEnd(res, 500, { error: err.message });
       }
     }
 
@@ -61,8 +91,9 @@ async function requestHandler(req, res) {
         const page = query.searchParams.get("page") || 1;
         const limit = query.searchParams.get("limit") || 10;
         const selectedServer = query.searchParams.get("selectedServer") || "ALL";
+        const search = query.searchParams.get("search");
 
-        const { data, err } = await axios.get(`${GOOGLE_URL}?page=${page}&limit=${limit}&selectedServer=${selectedServer}`).then((response) => {
+        const { data, err } = await axios.get(`${GOOGLE_URL}?page=${page}&limit=${limit}&selectedServer=${selectedServer}&search=${search}`).then((response) => {
           return {
             data: response.data,
             err: null
@@ -105,8 +136,7 @@ async function requestHandler(req, res) {
     }
   } catch (error) {
     console.log(error);
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ status: false, error: error.message }));
+    safeEnd(res, 500, { error: err.message });
   }
 }
 
