@@ -60,8 +60,9 @@ async function requestHandler(req, res) {
 
         const page = query.searchParams.get("page") || 1;
         const limit = query.searchParams.get("limit") || 10;
+        const selectedServer = query.searchParams.get("selectedServer") || "ALL";
 
-        const { data, err } = await axios.get(`${GOOGLE_URL}?page=${page}&limit=${limit}`).then((response) => {
+        const { data, err } = await axios.get(`${GOOGLE_URL}?page=${page}&limit=${limit}&selectedServer=${selectedServer}`).then((response) => {
           return {
             data: response.data,
             err: null
